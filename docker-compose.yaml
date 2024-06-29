@@ -1,0 +1,66 @@
+version: "3.8"
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./web-init-dev.sh
+    expose:
+      - 8000
+    volumes:
+      - .:/app
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres
+      - oracle
+    extra_hosts:
+      - "localhost:host-gateway"
+  nginx:
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
+      args:
+        CONFIG_FILE: nginx.dev.conf.template
+    ports:
+      - "8012:8080"
+    depends_on:
+      - web
+  postgres:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    expose:
+      - 5432
+    volumes:
+      - postgres_data:/var/lib/pgsql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+  oracle:
+    build:
+      context: ./oracle
+      dockerfile: Dockerfile
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    environment:
+      ORACLE_DB_HOST: ${ORACLE_DB_HOST}
+      ORACLE_DB_USERNAME: ${ORACLE_DB_USERNAME}
+      ORACLE_DB_NAME: ${ORACLE_DB_NAME}
+      ORACLE_DB_PASSWORD: ${ORACLE_DB_PASSWORD}
+      ORACLE_DB_PORT: ${ORACLE_DB_PORT}
+    ports:
+      - "${ORACLE_DB_PORT}:1521"
+
+volumes:
+  postgres_data:
+  oracle_data:
